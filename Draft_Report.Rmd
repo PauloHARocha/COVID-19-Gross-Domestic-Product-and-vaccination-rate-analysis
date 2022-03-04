@@ -1,7 +1,7 @@
 ---
 title: "COVID-19: Gross Domestic Product and vaccination rate analysis."
 author: "Paulo Rocha 919098831"
-date: "02/17/2022"
+date: "03/04/2022"
 output:
   html_document:
     df_print: paged
@@ -16,9 +16,19 @@ knitr::opts_chunk$set(fig.pos = 'H')
 
 ***
 
+**Updates since last version**
+
+- **Aims** section containing the objectives of the project was added.
+- **Code Availability** section was created containing the link for the github repository with the project code and documents.
+- The data was updated at March, new information regarding COVID cases, deaths and vaccination was added.
+- A correlation analysis was added at the end of the **Descriptive analysis** section.
+- Minor changes regarding the model coefficients in the **Discussion** section.
+- Minor typos correction.
+- Figures and tables were updated, all axis labels and variables names fixed.
+
 # Introduction
 
-The corona virus (COVID-19) pandemic had a tremendous impact in the world [1]. Understand the factors related to the COVID-19 pandemic is key to better address future pandemics. This project analysed recent data (February 2022) collected from the World Health Organization (WHO) online platform [2] containing information at country level regarding number of cases and number of deaths overtime since 2020 until 2022, and also information regarding the most recent population vaccination levels. Data containing information about contry population size was gathered from the United Nations online platform [3] to evaluate the rates of cases and deaths per population. 
+The corona virus (COVID-19) pandemic had a tremendous impact in the world [1]. Understand the factors related to the COVID-19 pandemic is key to better address future pandemics. This project analysed recent data (March 2022) collected from the World Health Organization (WHO) online platform [2] containing information at country level regarding number of cases and number of deaths overtime since 2020 until 2022, and also information regarding the most recent population vaccination levels. Data containing information about country population size was gathered from the United Nations online platform [3] to evaluate the rates of cases and deaths per population. 
 The Gross Domestic Product (GDP), a metric used to estimate the size a country economy, was collected from the World bank [4] online platform to evaluate the impact of the country economy in vaccinations. The objective of this study was to understand the patterns regarding number of cases, deaths and case-mortality overtime and also to model the association between vaccination and cases, deaths and GDP.
 
 
@@ -28,8 +38,8 @@ The COVID-19 pandemic started in the end of 2019 and by 2022 has been responsibl
 
 # Aims
 
-- Aim (1). Conduct an descriptive analysis on the COVID-19 pandemic numbers of cases and deaths, evaluating how did those numbers evolve during the years for the 6 WHO regions of the world.
-- Aim (2). Assess the association between vaccination rate, number of cases and deaths related to COVID, and the GDP by country.
+- (Aim 1) Conduct an descriptive analysis on the COVID-19 pandemic numbers of cases and deaths, evaluating how did those numbers evolve during the years for the 6 WHO regions of the world.
+- (Aim 2) Assess the association between vaccination rate, number of cases and deaths related to COVID, and the GDP by country.
 
 # Descriptive analysis
 
@@ -50,7 +60,7 @@ dim(who_cases)
 dim(who_vaccine)
 ```
 
-The WHO data [2] contains daily information about new and cumulative cases and deaths from January 2020 to February-2022 for 236 countries. The countries were grouped into the 6 WHO regions: Eastern Mediterranean, Europe, Africa, Western Pacific, Americas, and South-East Asia. Europe and Americas had more daily new cases and deaths for almost all the time period analyzed (Figure 1). The beginning of 2022 presented the highest values of new cases, with Europe reporting more than 2 million cases in a day. Even with the highest values of new cases the 2022 period didn't had the highest values of new deaths showing a possible effect of vaccination.
+The WHO data [2] contains daily information about new and cumulative cases and deaths from January 2020 to March-2022 for 236 countries. The countries were grouped into the 6 WHO regions: Eastern Mediterranean, Europe, Africa, Western Pacific, Americas, and South-East Asia. Europe and Americas had more daily new cases and deaths for almost all the time period analyzed (Figure 1). The beginning of 2022 presented the highest values of new cases, with Europe reporting more than 2 million cases in a day. Even with the highest values of new cases the 2022 period didn't had the highest values of new deaths showing a possible effect of vaccination.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
 who_cases <- who_cases %>% 
@@ -77,12 +87,14 @@ length(unique(who_cases$WHO_region))
 
 f1 <- ggplot(who_cases_region, aes(x = Date_reported, y = New_cases)) +
   geom_line(aes(color = WHO_region))+
-  scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12))
+  scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
+  labs(x = "Date reported", y = "New cases",color='WHO region')
 
 f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = New_deaths)) +
   geom_line(aes(color = WHO_region)) +
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
-  guides(color="none")
+  guides(color="none") +
+  labs(x = "Date reported", y = "New deaths",color='WHO region')
 
 
 (f1 / f2) + plot_annotation(
@@ -90,19 +102,19 @@ f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = New_deaths)) +
   theme = theme(plot.title = element_text(hjust = 0.5))
 )
 ```
-The cumulative cases overtime shows that Americas region had more cases than Europe until the beginning of 2022, showing a high increase in numbers of new cases in Europe in this period (Figure 2). At February 17th 2022, the Americas region has the highest cumulative deaths (2,585,427), 752,451 more deaths than Europe and 1,830,165 more deaths than South-East Asia.
+The cumulative cases overtime shows that Americas region had more cases than Europe until the beginning of 2022, showing a high increase in numbers of new cases in Europe in this period (Figure 2). At March 4th 2022, the Americas region has the highest cumulative deaths (2,637,306), 757,950 more deaths than Europe and 1,873,504 more deaths than South-East Asia.
 
 ```{r, echo=FALSE, fig.height=8, fig.width=12}
 f1 <- ggplot(who_cases_region, aes(x = Date_reported, y = Cumulative_cases)) +
   geom_line(aes(color = WHO_region))+
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
-  labs(x = "Data reported", y = "Cumulative cases",color='WHO region')
+  labs(x = "Date reported", y = "Cumulative cases",color='WHO region')
 
 f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = Cumulative_deaths)) +
   geom_line(aes(color = WHO_region)) +
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
   guides(color="none")+
-  labs(x = "Data reported", y = "Cumulative deaths")
+  labs(x = "Date reported", y = "Cumulative deaths")
 
 
 (f1 / f2) + plot_annotation(
@@ -117,7 +129,7 @@ The case-mortality rate was generated based on the daily cumulative deaths divid
 f1 <- ggplot(who_cases_region, aes(x = Date_reported, y = Case_mortality_rate)) +
   geom_line(aes(color = WHO_region)) +
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
-  labs(x = "Data reported", y = "Case-mortality rate",color='WHO region')
+  labs(x = "Date reported", y = "Case-mortality rate",color='WHO region')
 
 
 f1 + plot_annotation(
@@ -189,18 +201,23 @@ who_cases.top.deaths.pop <- who_cases.today.pop[order(-who_cases.today.pop$Death
 
 
 f1 <- ggplot(data=who_cases.top.cases, aes(x=Cumulative_cases, y=Country)) +
-  geom_bar(stat="identity", width = 0.5)
+  geom_bar(stat="identity", width = 0.5) +
+  labs(x = "Cumulative cases", y = "Country")
+
 
 f2 <- ggplot(data=who_cases.top.deaths, aes(x=Cumulative_deaths, y=Country)) +
   geom_bar(stat="identity", width = 0.5) +
-  theme(axis.title.y=element_blank())
+  theme(axis.title.y=element_blank())+
+  labs(x = "Cumulative deaths")
 
 f3 <- ggplot(data=who_cases.top.cases.pop, aes(x=Cases_per_pop, y=Country)) + 
-  geom_bar(stat="identity", width = 0.5) 
+  geom_bar(stat="identity", width = 0.5) +
+  labs(x = "Cases rate (cases/pop)", y = "Country")
 
 f4 <- ggplot(data=who_cases.top.deaths.pop, aes(x=Deaths_per_pop, y=Country)) + 
   geom_bar(stat="identity", width = 0.5) +
-  theme(axis.title.y=element_blank())
+  theme(axis.title.y=element_blank())+
+  labs(x = "Deaths rate (deaths/pop)")
 
 
 ((f1 + f2) / (f3 + f4)) + plot_annotation(
@@ -256,8 +273,14 @@ df.fit <- df.fit %>%
 plotmeans(GDP_2020 ~ WHO_region,df.fit,cex.lab=1.5,
           main="Figure 6. Gross Domestic Product (GDP)",xlab="WHO regions",  ylab="GDP $") 
 ```
+The correlation between the analyzed variables (Table 3) showed a moderate positive correlation between vaccination rate, case rate, and GDP, and a weak positive correlation between vaccination rate and mortality rate. The mortality rate and case rate had a moderate positive correlation, and GDP had a moderate positive correlation with case rate and a weak positive correlation with mortality rate.
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-cor(df.fit[,c(4,5,7,8)]) %>%
+df.cor <- df.fit[,c(4,5,7,8)]
+
+colnames(df.cor) <- c("Cases per pop %",	"Deaths per pop %",	"GDP", "Pop fully vaccinated %")
+
+cor(df.cor) %>%
   kbl(caption = "Table 3. Correlation matrix.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
@@ -273,7 +296,7 @@ The WLS model [6,7] assume that there is nonconstant variance in the errors $\ep
 
 $\hat{\beta}_{WLS} = (X^TWX)^{-1}X^TWY$
 
-Each weight is inversely proportional to the error variance, where observations with small error variance will have large weight and the ones with large error variance will have small weight [7]. The model was choosen given the presence of a continuos outcome and also because the WLS model deals with the heteroscedasticity issue that is common when applying Ordinary Least Squares models to complex real-world data.
+Each weight is inversely proportional to the error variance, where observations with small error variance will have large weight and the ones with large error variance will have small weight [7]. The model was chosen due to the presence of a continuous outcome and also because the WLS model deals with the heteroscedasticity issue that is common when applying Ordinary Least Squares models to complex real-world data.
 
 The model was fitted showing a positive relationship between the outcome and cases per population percentage, and between the outcome and 2020 GDP at statistical significant level at 99% (Table 2).
 
@@ -287,8 +310,12 @@ wt <- 1 / lm(abs(fit$residuals) ~ fit$fitted.values)$fitted.values^2
 #perform weighted least squares regression
 fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data = df.fit, weights=wt)
 
-summary(fit.wls)$coefficients %>%
-  kbl(caption = "Table 3. WLS model coefficients.") %>%
+fit.wls.coefficients <- summary(fit.wls)$coefficients
+
+rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP")
+
+fit.wls.coefficients %>%
+  kbl(caption = "Table 4. WLS model coefficients for Pop fully vaccinated %.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
 
@@ -298,17 +325,22 @@ The variables histogram showed some outliers taking into consideration the varia
 
 ```{r,fig.height=6, fig.width=12,echo=FALSE, warning=FALSE, message=FALSE }
 
+
 p1 <- ggplot(df.fit, aes(x=PERSONS_FULLY_VACCINATED_PER100)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15) 
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "Pop fully vaccinated %", y = "Count")
 
 p2 <- ggplot(df.fit, aes(x=Cases_per_pop100)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15) 
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "Cases per pop %", y = "Count")
     
 p3 <- ggplot(df.fit, aes(x=Deaths_per_pop100)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15)
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "Deaths per pop %", y = "Count")
 
 p4 <- ggplot(df.fit, aes(x=GDP_2020)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15)
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "GDP", y = "Count")
 
 ((p1 | p2) / (p3 | p4)) + plot_annotation(
   title = 'Figure 7. Variables histogram',
@@ -330,8 +362,12 @@ wt <- 1 / lm(abs(fit$residuals) ~ fit$fitted.values)$fitted.values^2
 #perform weighted least squares regression
 fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data = df.fit2, weights=wt)
 
-summary(fit.wls)$coefficients %>%
-  kbl(caption = "Table 4. Updated WLS model coefficients.") %>%
+fit.wls.coefficients <- summary(fit.wls)$coefficients
+
+rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP")
+
+fit.wls.coefficients %>%
+  kbl(caption = "Table 5. Updated WLS model coefficients for Pop fully vaccinated %.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
 
@@ -339,7 +375,7 @@ summary(fit.wls)$coefficients %>%
 # Discussion 
 
 The project showed how different regions in the world had different characteristics regarding COVID cases, deaths and vaccination. In terms of cumulative deaths, the Americas region is the one with the highest value, while in terms of cumulative cases, the Europe region is the one with the highest value and had a great increase in 2022, showing a possible relationship with the new COVID variants.
-To evaluate if there is an effect in country vaccination levels given cases, deaths and GDP, the WLS was fitted based on 181 countries and showed that for a unit increase in cases per population percentage represents a 0.602 increase in fully vaccinated population percentage. That result indicated that countries with more cases cases per population tends to have a greater percentage of population fully vaccinated by February 2022. The model also showed that a $10,000 increase in GDP represents a 5.017 increase in fully vaccinated population percentage, indicating how more wealth countries will have a greater percentage of population fully vaccinated by February 2022.
+To evaluate if there is an effect in country vaccination levels given cases, deaths and GDP, the WLS was fitted based on 181 countries and showed that for a unit increase in cases per population percentage represents a 0.609 increase in fully vaccinated population percentage. That result indicated that countries with more cases cases per population tends to have a greater percentage of population fully vaccinated by March 2022. The model also showed that a $10,000 increase in GDP represents a 4.873 increase in fully vaccinated population percentage, indicating how more wealth countries will have a greater percentage of population fully vaccinated by March 2022.
 In conclusion, the project showed how the country number of cases and economy may explain the percentage of people fully vaccinated, that indicated how socioeconomic factors impacts the population health in a pandemic period. Analysis regarding those factors may advise international organizations, as United Nations, to better address the vaccination disparities in the world.
 
 

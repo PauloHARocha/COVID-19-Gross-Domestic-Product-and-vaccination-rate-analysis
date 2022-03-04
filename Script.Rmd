@@ -1,7 +1,7 @@
 ---
 title: "(SCRIPT) COVID-19: Gross Domestic Product and vaccination rate analysis."
 author: "Paulo Rocha 919098831"
-date: "02/17/2022"
+date: "03/04/2022"
 output:
   html_document:
     df_print: paged
@@ -61,12 +61,14 @@ length(unique(who_cases$WHO_region))
 
 f1 <- ggplot(who_cases_region, aes(x = Date_reported, y = New_cases)) +
   geom_line(aes(color = WHO_region))+
-  scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12))
+  scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
+  labs(x = "Date reported", y = "New cases",color='WHO region')
 
 f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = New_deaths)) +
   geom_line(aes(color = WHO_region)) +
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
-  guides(color="none")
+  guides(color="none") +
+  labs(x = "Date reported", y = "New deaths",color='WHO region')
 
 
 (f1 / f2) + plot_annotation(
@@ -80,13 +82,13 @@ f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = New_deaths)) +
 f1 <- ggplot(who_cases_region, aes(x = Date_reported, y = Cumulative_cases)) +
   geom_line(aes(color = WHO_region))+
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
-  labs(x = "Data reported", y = "Cumulative cases",color='WHO region')
+  labs(x = "Date reported", y = "Cumulative cases",color='WHO region')
 
 f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = Cumulative_deaths)) +
   geom_line(aes(color = WHO_region)) +
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
   guides(color="none")+
-  labs(x = "Data reported", y = "Cumulative deaths")
+  labs(x = "Date reported", y = "Cumulative deaths")
 
 
 (f1 / f2) + plot_annotation(
@@ -101,7 +103,7 @@ f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = Cumulative_deaths)) +
 f1 <- ggplot(who_cases_region, aes(x = Date_reported, y = Case_mortality_rate)) +
   geom_line(aes(color = WHO_region)) +
   scale_x_continuous(breaks = pretty(who_cases_region$Date_reported, n = 12)) +
-  labs(x = "Data reported", y = "Case-mortality rate",color='WHO region')
+  labs(x = "Date reported", y = "Case-mortality rate",color='WHO region')
 
 
 f1 + plot_annotation(
@@ -171,18 +173,23 @@ who_cases.top.deaths.pop <- who_cases.today.pop[order(-who_cases.today.pop$Death
 
 
 f1 <- ggplot(data=who_cases.top.cases, aes(x=Cumulative_cases, y=Country)) +
-  geom_bar(stat="identity", width = 0.5)
+  geom_bar(stat="identity", width = 0.5) +
+  labs(x = "Cumulative cases", y = "Country")
+
 
 f2 <- ggplot(data=who_cases.top.deaths, aes(x=Cumulative_deaths, y=Country)) +
   geom_bar(stat="identity", width = 0.5) +
-  theme(axis.title.y=element_blank())
+  theme(axis.title.y=element_blank())+
+  labs(x = "Cumulative deaths")
 
 f3 <- ggplot(data=who_cases.top.cases.pop, aes(x=Cases_per_pop, y=Country)) + 
-  geom_bar(stat="identity", width = 0.5) 
+  geom_bar(stat="identity", width = 0.5) +
+  labs(x = "Cases rate (cases/pop)", y = "Country")
 
 f4 <- ggplot(data=who_cases.top.deaths.pop, aes(x=Deaths_per_pop, y=Country)) + 
   geom_bar(stat="identity", width = 0.5) +
-  theme(axis.title.y=element_blank())
+  theme(axis.title.y=element_blank())+
+  labs(x = "Deaths rate (deaths/pop)")
 
 
 ((f1 + f2) / (f3 + f4)) + plot_annotation(
@@ -238,14 +245,17 @@ df.fit <- df.fit %>%
 plotmeans(GDP_2020 ~ WHO_region,df.fit,cex.lab=1.5,
           main="Figure 6. Gross Domestic Product (GDP)",xlab="WHO regions",  ylab="GDP $") 
 ```
+
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-cor(df.fit[,c(4,5,7,8)]) %>%
+df.cor <- df.fit[,c(4,5,7,8)]
+
+colnames(df.cor) <- c("Cases per pop %",	"Deaths per pop %",	"GDP", "Pop fully vaccinated %")
+
+cor(df.cor) %>%
   kbl(caption = "Table 3. Correlation matrix.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
-
-
-# Inferential analysis
 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
@@ -258,26 +268,34 @@ wt <- 1 / lm(abs(fit$residuals) ~ fit$fitted.values)$fitted.values^2
 #perform weighted least squares regression
 fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data = df.fit, weights=wt)
 
-summary(fit.wls)$coefficients %>%
-  kbl(caption = "Table 3. WLS model coefficients.") %>%
+fit.wls.coefficients <- summary(fit.wls)$coefficients
+
+rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP")
+
+fit.wls.coefficients %>%
+  kbl(caption = "Table 4. WLS model coefficients for Pop fully vaccinated %.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
 
 
-
 ```{r,fig.height=6, fig.width=12,echo=FALSE, warning=FALSE, message=FALSE }
 
+
 p1 <- ggplot(df.fit, aes(x=PERSONS_FULLY_VACCINATED_PER100)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15) 
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "Pop fully vaccinated %", y = "Count")
 
 p2 <- ggplot(df.fit, aes(x=Cases_per_pop100)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15) 
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "Cases per pop %", y = "Count")
     
 p3 <- ggplot(df.fit, aes(x=Deaths_per_pop100)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15)
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "Deaths per pop %", y = "Count")
 
 p4 <- ggplot(df.fit, aes(x=GDP_2020)) + 
-    geom_histogram(alpha=0.5, position="identity", bins = 15)
+    geom_histogram(alpha=0.5, position="identity", bins = 15) +
+  labs(x = "GDP", y = "Count")
 
 ((p1 | p2) / (p3 | p4)) + plot_annotation(
   title = 'Figure 7. Variables histogram',
@@ -299,10 +317,15 @@ wt <- 1 / lm(abs(fit$residuals) ~ fit$fitted.values)$fitted.values^2
 #perform weighted least squares regression
 fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data = df.fit2, weights=wt)
 
-summary(fit.wls)$coefficients %>%
-  kbl(caption = "Table 4. Updated WLS model coefficients.") %>%
+fit.wls.coefficients <- summary(fit.wls)$coefficients
+
+rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP")
+
+fit.wls.coefficients %>%
+  kbl(caption = "Table 5. Updated WLS model coefficients for Pop fully vaccinated %.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
+
 
 # Session info {-}
 
