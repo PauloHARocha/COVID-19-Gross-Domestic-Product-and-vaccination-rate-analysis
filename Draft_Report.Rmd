@@ -43,7 +43,7 @@ options(qwraps2_markup = "latex")
 
 who_cases <- read_csv("https://covid19.who.int/WHO-COVID-19-global-data.csv")
 who_vaccine <- read_csv("https://covid19.who.int/who-data/vaccination-data.csv")
-pop = read_csv("WPP2019_TotalPopulationBySex.csv")
+pop = read_csv("datasets/WPP2019_TotalPopulationBySex.csv")
 
 dim(pop)
 dim(who_cases)
@@ -232,8 +232,8 @@ plotmeans(PERSONS_FULLY_VACCINATED_PER100 ~ WHO_region,data=who_cases.today.pop.
 The World bank data [4] for Gross Domestic Product (GDP) contained 2020 GDP estimates for 185 countries. In terms of mean, Europe region has higher values of GDP than Africa, Eastern Mediterranean and South-East Asia (Figure 6).
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
-gdp <- read.csv("API_NY.GDP.PCAP.CD_DS2_en_csv_v2_3632113.csv")
-country.code <- read.csv("country_code.csv")
+gdp <- read.csv("datasets/API_NY.GDP.PCAP.CD_DS2_en_csv_v2_3632113.csv")
+country.code <- read.csv("datasets/country_code.csv")
 country.code <- country.code %>% 
   mutate(Country.Code=Alpha.3.code)
 
