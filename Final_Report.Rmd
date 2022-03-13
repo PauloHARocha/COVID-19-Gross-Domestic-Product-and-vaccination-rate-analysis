@@ -16,16 +16,10 @@ knitr::opts_chunk$set(fig.pos = 'H')
 
 ***
 
-**Updates since last version**
-
-- **Aims** section containing the objectives of the project was added.
-- **Code Availability** section was created containing the link for the github repository with the project code and documents.
-- The data was updated at March, new information regarding COVID cases, deaths and vaccination was added.
-- A correlation analysis was added at the end of the **Descriptive analysis** section.
-- Variables equations were added at the end of the **Descriptive analysis** section.
-- Minor changes regarding the model coefficients in the **Discussion** section.
-- Minor typos correction.
-- Figures and tables were updated, all axis labels and variables names fixed.
+# TO DO
+- Add Stringency index citation [Our World in Data].
+- Update all references numbers
+- Review Discussion
 
 # Introduction
 
@@ -166,7 +160,7 @@ our_summary1 <-
             "max"       = ~ max(Case_mortality_rate))
        )
 
-summary_table(dplyr::group_by(who_cases_region, WHO_region), our_summary1) %>%
+gsub("000", "",gsub(".0000", "", format(round(summary_table(dplyr::group_by(who_cases_region, WHO_region), our_summary1),4), scientific = F))) %>%
   kbl(caption = "Table 1. Summary statistics, median and max values.") %>%
   pack_rows("New cases", 1, 2) %>%
   pack_rows("Cumulative cases", 3, 4) %>%
@@ -186,7 +180,7 @@ pop.2022 <- pop %>%
 
 pop.2022$PopTotal <- pop.2022$PopTotal*1000 
 who_cases.today <- who_cases %>% 
-  filter(Date_reported == "2022-02-17")
+  filter(Date_reported == "2022-03-01")
 
 who_cases.today.pop <- left_join(who_cases.today, pop.2022, by="Country")
 
@@ -235,40 +229,51 @@ f4 <- ggplot(data=who_cases.top.deaths.pop, aes(x=Deaths_per_pop, y=Country)) +
 For the vaccination records, the WHO data [2] provided information regarding the most recent vaccination report for each country, in a total of 228 countries. Africa and Eastern Mediterranean WHO regions have the lowest mean values in terms of population fully vaccinated (Figure 5).
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
-who_vaccine <- who_vaccine %>% 
-  mutate(Country=COUNTRY)
+country.code <- read.csv("datasets/country_code.csv")
+country.code <- country.code %>% 
+  mutate(Country.Code=Alpha.3.code)
 
-who_cases.today.pop.vaccine <- inner_join(who_cases.today.pop, who_vaccine, by="Country")
+who_cases.today.pop <- who_cases.today.pop %>% 
+  mutate(Alpha.2.code=Country_code)
+
+who_cases.today.pop <- inner_join(who_cases.today.pop, country.code, by="Alpha.2.code")
+
+who_vaccine <- who_vaccine %>% 
+  mutate(Country.Code=ISO3)
+
+who_cases.today.pop.vaccine <- inner_join(who_cases.today.pop, who_vaccine, by="Country.Code")
 
 who_cases.today.pop.vaccine$Cases_per_pop100 <- who_cases.today.pop.vaccine$Cases_per_pop*100
 who_cases.today.pop.vaccine$Deaths_per_pop100 <- who_cases.today.pop.vaccine$Deaths_per_pop*100
 
 
-length(unique(who_vaccine$Country))
-length(unique(who_cases.today.pop.vaccine$Country))
+length(unique(who_cases.today.pop$Country.x))
+length(unique(who_vaccine$COUNTRY))
+length(unique(who_cases.today.pop.vaccine$Country.x))
 
 ```
 
-```{r,echo=FALSE, fig.height=6, fig.width=12}
-plotmeans(PERSONS_FULLY_VACCINATED_PER100 ~ WHO_region,data=who_cases.today.pop.vaccine,cex.lab=1.5,
-          main="Figure 5. Pop fully vaccinated % means",xlab="WHO regions",  ylab="Pop fully vaccinated %") 
-```
-The World bank data [4] for Gross Domestic Product (GDP) contained 2020 GDP estimates for 185 countries. In terms of mean, Europe region has higher values of GDP than Africa, Eastern Mediterranean and South-East Asia (Figure 6).
+
+The World bank data [4] for Gross Domestic Product (GDP) contained 2020 GDP estimates for 185 countries. In terms of mean, Europe region has higher values of GDP than Africa, Eastern Mediterranean and South-East Asia (Figure 5).
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
 gdp <- read.csv("datasets/API_NY.GDP.PCAP.CD_DS2_en_csv_v2_3632113.csv")
-country.code <- read.csv("datasets/country_code.csv")
-country.code <- country.code %>% 
-  mutate(Country.Code=Alpha.3.code)
 
-gdp <- inner_join(country.code, gdp, by="Country.Code")
+who_cases.today.pop.vaccine.gdp <- inner_join(who_cases.today.pop.vaccine, gdp, by="Country.Code")
 
-who_cases.today.pop.vaccine <- who_cases.today.pop.vaccine %>% 
-  mutate(Alpha.2.code=Country_code)
+stringency <- read.csv("datasets/covid-stringency-index.csv")
 
-who_cases.today.pop.vaccine.gdp <- inner_join(who_cases.today.pop.vaccine, gdp, by="Alpha.2.code")
+stringency.mean <- aggregate(stringency$stringency_index, by=list(Country.Code=stringency$Code), FUN=mean)
+stringency.mean$Stringency <- stringency.mean$x
 
-df.fit <- drop_na(who_cases.today.pop.vaccine.gdp[,c("COUNTRY", "WHO_region", "PERSONS_FULLY_VACCINATED_PER100", "Cases_per_pop100", "Deaths_per_pop100", "X2020")])
+length(unique(stringency.mean$Country.Code))
+length(unique(who_cases.today.pop.vaccine.gdp$Country.Code))
+
+who_cases.today.pop.vaccine.gdp.stringency <- inner_join(who_cases.today.pop.vaccine.gdp,
+                                                        stringency.mean, by="Country.Code")
+
+df.fit <- drop_na(who_cases.today.pop.vaccine.gdp.stringency[,c("Country.Code", "WHO_region", "PERSONS_FULLY_VACCINATED_PER100", 
+                                                               "Cases_per_pop100", "Deaths_per_pop100", "X2020", "Stringency")])
 df.fit <- df.fit %>% 
   mutate(GDP_2020=X2020) %>% 
   mutate(Pop_fully_vaccinated=PERSONS_FULLY_VACCINATED_PER100)
@@ -277,28 +282,69 @@ df.fit <- df.fit %>%
 
 
 ```{r,fig.height=6, fig.width=12,echo=FALSE, warning=FALSE, message=FALSE }
-plotmeans(GDP_2020 ~ WHO_region,df.fit,cex.lab=1.5,
-          main="Figure 6. Gross Domestic Product (GDP)",xlab="WHO regions",  ylab="GDP $") 
+df.ci <- df.fit %>%
+  group_by(WHO_region) %>%
+  summarise(GDP_mean=mean(GDP_2020), 
+            GDP_sd=sd(GDP_2020),
+            GDP_count=n(),
+            vac_mean=mean(PERSONS_FULLY_VACCINATED_PER100), 
+            vac_sd=sd(PERSONS_FULLY_VACCINATED_PER100))
+
+normal_ci <- function(x, output){
+  alpha=0.05
+  m_gdp <- as.double(x[2])
+  s_gdp <- as.double(x[3])
+  n <- as.integer(x[4])
+  m_vac <- as.double(x[5])
+  s_vac <- as.double(x[6])
+  return(c(x[1], 
+           m_gdp ,qt(1-alpha/2, n - 1)*s_gdp/sqrt(n),
+           m_vac ,qt(1-alpha/2, n - 1)*s_vac/sqrt(n)
+           ))
+}
+
+df.ci.gdp <- as.data.frame(t(apply(df.ci,1,normal_ci)))
+colnames(df.ci.gdp) <- c("WHO_region", "GDP", "GDP_se", "Vac", "Vac_se")
+
+df.ci.gdp$GDP <- as.double(df.ci.gdp$GDP) 
+df.ci.gdp$GDP_se <- as.double(df.ci.gdp$GDP_se) 
+df.ci.gdp$Vac <- as.double(df.ci.gdp$Vac) 
+df.ci.gdp$Vac_se <- as.double(df.ci.gdp$Vac_se) 
+
+f1 <- ggplot(df.ci.gdp, aes(x=GDP, y=Vac, color=WHO_region)) + 
+    geom_errorbar(aes(ymin=Vac-Vac_se, ymax=Vac+Vac_se), width=0.2, position=position_dodge(0.05)) + 
+    geom_errorbar(aes(xmin=GDP-GDP_se, xmax=GDP+GDP_se), width=0.2)+
+    geom_line() +
+    geom_point() +
+    labs(x = "GDP per capita $", y = "Pop fully vaccinated %",color='WHO region')
+
+f1 + plot_annotation(
+  title = 'Figure 5. Pop fully vaccinated % and GDP per capita means 95% CI',
+  theme = theme(plot.title = element_text(hjust = 0.5))
+)
 ```
-The correlation between the analyzed variables (Table 3) showed a moderate positive correlation between vaccination rate (percentage of population fully vaccinated), case rate (Equation 2), and GDP, and a weak positive correlation between vaccination rate and mortality rate (Equation 3). The mortality rate and case rate had a moderate positive correlation, and GDP had a moderate positive correlation with case rate and a weak positive correlation with mortality rate.
+
+The Stringency Index is a measure related to country policies regarding lockdown measures, is based on indicators including school closures, workplace closures, and travel bans [cite]. The index is scaled from 0 to 100, higher values means more strict policies. Over the course of the pandemic, the index varied in each country, the data contain the index overtime, from 2020 to 2022, was retrieved from the Our World in Data platform [cite]. For this study, the Stringency index was aggregate by the mean, to represent the lockdown policy strictness, in average during the pandemic, for each country.
+
+The correlation between the analyzed variables (Table 3) showed a moderate positive correlation between vaccination rate (percentage of population fully vaccinated), case rate (Equation 2), and GDP, and a weak positive correlation between vaccination rate and mortality rate (Equation 3). The mortality rate and case rate had a moderate positive correlation, and GDP had a moderate positive correlation with case rate and a weak positive correlation with mortality rate. The Stringency index had lower or moderate positive correlation with the other variables.
 
 $$
 \begin{equation} 
-  \text{Cases per pop %} = \frac{\text{cases}}{\text{population}*100}
+  \text{Cases per capita %} = \frac{\text{cases}}{\text{population}*100}
   \tag{2}
 \end{equation}
 $$
 $$
 \begin{equation} 
-  \text{Deaths per pop %} = \frac{\text{deaths}}{\text{population}*100}
+  \text{Deaths per capita %} = \frac{\text{deaths}}{\text{population}*100}
   \tag{3}
 \end{equation}
 $$
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-df.cor <- df.fit[,c(4,5,7,8)]
+df.cor <- df.fit[,c("Cases_per_pop100","Deaths_per_pop100","X2020",  "Stringency","PERSONS_FULLY_VACCINATED_PER100")]
 
-colnames(df.cor) <- c("Cases per pop %",	"Deaths per pop %",	"GDP", "Pop fully vaccinated %")
+colnames(df.cor) <- c("Cases per cap %",	"Deaths per cap %",	"GDP per cap",  "Stringency","Pop fully vaccinated %")
 
 cor(df.cor) %>%
   kbl(caption = "Table 3. Correlation matrix.") %>%
@@ -308,11 +354,11 @@ cor(df.cor) %>%
 
 # Inferential analysis
 
-For this project a Weighted Least Squares (WLS) [6,7] additive regression model will be used to evaluate the relationship, at country level, between the outcome population fully vaccinated ($Y$) and the independent variables ($X$): cases per population percentage ($X_1$), deaths per population percentage ($X_2$) and 2020 GDP ($X_3$), defined as:
+For this project a Weighted Least Squares (WLS) [6,7] additive regression model will be used to evaluate the relationship, at country level ($n=165$), between the outcome population fully vaccinated ($Y$) and the independent variables ($X$): cases per population percentage ($X_1$), deaths per population percentage ($X_2$), 2020 GDP per capita ($X_3$) and Stringency index ($X_4$), defined as:
 
 $$
 \begin{equation} 
-  Y = X\beta + \epsilon =  \beta_0 + X_1\beta_1 + X_2\beta_2 + X_3\beta_3 + \epsilon*
+  Y = X\beta + \epsilon =  \beta_0 + X_1\beta_1 + X_2\beta_2 + X_3\beta_3 + X_4\beta_4 + \epsilon*
   \tag{4}
 \end{equation} 
 $$
@@ -327,30 +373,34 @@ $$
 $$
 Each weight is inversely proportional to the error variance, where observations with small error variance will have large weight and the ones with large error variance will have small weight [7]. The model was chosen due to the presence of a continuous outcome and also because the WLS model deals with the heteroscedasticity issue that is common when applying Ordinary Least Squares models to complex real-world data.
 
-The model was fitted showing a positive relationship between the outcome and cases per population percentage, and between the outcome and 2020 GDP at statistical significant level at 99% (Table 2).
+The model was fitted showing a positive relationship between the outcome and cases per population percentage, between the outcome and 2020 GDP per capita, and between the outcome and Stringency index at statistical significant level at 99% (Table 4).
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
-fit <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data=df.fit)
+fit <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020 + Stringency, data=df.fit)
 
 #define weights to use
 wt <- 1 / lm(abs(fit$residuals) ~ fit$fitted.values)$fitted.values^2
 
 #perform weighted least squares regression
-fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data = df.fit, weights=wt)
+fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020+ Stringency, data = df.fit, weights=wt)
 
 fit.wls.coefficients <- summary(fit.wls)$coefficients
 
-rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP")
+rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP", "Stringency")
 
 fit.wls.coefficients %>%
   kbl(caption = "Table 4. WLS model coefficients for Pop fully vaccinated %.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
+summary(fit.wls)
+```
+
 # Sensitivity analysis 
 
-The variables histogram showed some outliers taking into consideration the variables deaths per population percentage and 2020 GDP (Figure 7). The observations with deaths per population percentage value higher than 0.6 and 2020 GPD higher than 100,000 where removed from the data (4 observations), given the high absolute values that may influence the model.
+The variables histogram showed some outliers taking into consideration the variables deaths per population percentage and 2020 GDP (Figure 6). The observations with deaths per population percentage value higher than 0.6 and 2020 GPD higher than 100,000 where removed from the data (4 observations), given the high absolute values that may influence the model.
 
 ```{r,fig.height=6, fig.width=12,echo=FALSE, warning=FALSE, message=FALSE }
 
@@ -372,39 +422,42 @@ p4 <- ggplot(df.fit, aes(x=GDP_2020)) +
   labs(x = "GDP", y = "Count")
 
 ((p1 | p2) / (p3 | p4)) + plot_annotation(
-  title = 'Figure 7. Variables histogram',
+  title = 'Figure 6. Variables histogram',
   theme = theme(plot.title = element_text(hjust = 0.5))
 )
 
 ```
-After the model diagnosis and correction, the updated WLS fitted model still showed  a positive relationship between the outcome and cases per population percentage, and between the outcome and 2020 GDP at statistical significant level at 99% (Table 3). After removing the outliers, the Coefficient of Determination ($R^2$) increased from 0.3579 to 0.4214, representing a 15% increase in the outcome variance "explain".
+After the model diagnosis and correction, the updated WLS fitted model still showed  a positive relationship between the outcome and cases per population percentage, and between the outcome and 2020 GDP at statistical significant level at 99% (Table 3). After removing the outliers, the Coefficient of Determination ($R^2$) increased from 0.4407 to 0.4925, representing a 5% increase in the outcome variance "explain".
 
 ```{r, echo=FALSE}
 df.fit2 <- df.fit %>% 
   filter(Deaths_per_pop100 < 0.6, GDP_2020 < 100000)
 
-fit <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data=df.fit2)
+fit <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020 + Stringency, data=df.fit2)
 
 #define weights to use
 wt <- 1 / lm(abs(fit$residuals) ~ fit$fitted.values)$fitted.values^2
 
 #perform weighted least squares regression
-fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020, data = df.fit2, weights=wt)
+fit.wls <- lm(Pop_fully_vaccinated ~ Cases_per_pop100 + Deaths_per_pop100 + GDP_2020 + Stringency, data = df.fit2, weights=wt)
 
 fit.wls.coefficients <- summary(fit.wls)$coefficients
 
-rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP")
+rownames(fit.wls.coefficients) <- c("(Intercept)", "Cases per pop %",	"Deaths per pop %", "GDP", "Stringency")
 
 fit.wls.coefficients %>%
   kbl(caption = "Table 5. Updated WLS model coefficients for Pop fully vaccinated %.") %>%
   kable_classic(full_width = F, html_font = "Cambria")
 ```
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
+summary(fit.wls)
+```
 
 # Discussion 
 
 The project showed how different regions in the world had different characteristics regarding COVID cases, deaths and vaccination. In terms of cumulative deaths, the Americas region is the one with the highest value, while in terms of cumulative cases, the Europe region is the one with the highest value and had a great increase in 2022, showing a possible relationship with the new COVID variants.
-To evaluate if there is an effect in country vaccination levels given cases, deaths and GDP, the WLS was fitted based on 181 countries and showed that for a unit increase in cases per population percentage represents a 0.609 increase in fully vaccinated population percentage. That result indicated that countries with more cases cases per population tends to have a greater percentage of population fully vaccinated by March 2022. The model also showed that a $10,000 increase in GDP represents a 4.873 increase in fully vaccinated population percentage, indicating how more wealth countries will have a greater percentage of population fully vaccinated by March 2022.
+To evaluate if there is an effect in country vaccination levels given cases, deaths and GDP, the WLS was fitted based on 161 countries and showed that for a unit increase in cases per population percentage represents a 0.5705 increase in fully vaccinated population percentage. That result indicated that countries with more cases cases per population tends to have a greater percentage of population fully vaccinated by March 2022. The model also showed that a $10,000 increase in GDP represents a 5.602 increase in fully vaccinated population percentage, indicating how more wealth countries will have a greater percentage of population fully vaccinated by March 2022.
 In conclusion, the project showed how the country number of cases and economy may explain the percentage of people fully vaccinated, that indicated how socioeconomic factors impacts the population health in a pandemic period. Analysis regarding those factors may advise international organizations, as United Nations, to better address the vaccination disparities in the world.
 
 
@@ -432,7 +485,7 @@ All the code used to perform the analysis of this project is available at the gi
  
  [7] 13.1 - weighted least squares: Stat 501. PennState: Statistics Online Courses. (n.d.). Retrieved February 17, 2022, from https://online.stat.psu.edu/stat501/lesson/13/13.1 
  
-
+[cite] Our world in data
 
 
 # Session info {-}
