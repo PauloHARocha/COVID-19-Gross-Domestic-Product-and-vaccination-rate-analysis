@@ -91,7 +91,7 @@ f2 <- ggplot(who_cases_region, aes(x = Date_reported, y = New_deaths)) +
   theme = theme(plot.title = element_text(hjust = 0.5))
 )
 ```
-The cumulative cases overtime shows that Americas region had more cases than Europe until the beginning of 2022, showing a high increase in numbers of new cases in Europe in this period (Figure 2). At March 2022, the Americas region has the highest cumulative deaths (>2,6M), ~760k more deaths than Europe and ~1,89M more deaths than South-East Asia.
+The cumulative cases overtime shows that Americas region had more cases than Europe until the beginning of 2022, showing a high increase in numbers of new cases in Europe in this period (Figure 2).
 
 ```{r, echo=FALSE, fig.height=8, fig.width=12}
 f1 <- ggplot(who_cases_region, aes(x = Date_reported, y = Cumulative_cases)) +
@@ -133,7 +133,7 @@ f1 + plot_annotation(
 )
 ```
 
-The Americas region had the highest median for all variables (Table 1). 
+At March 2022, the Americas region has the highest cumulative deaths (>2,6M), ~760k more deaths than Europe and ~1,89M more deaths than South-East Asia. The Americas region had the highest median for all variables (Table 1). 
 
 ```{r, echo=FALSE, fig.height=4, fig.width=14}
 our_summary1 <-
@@ -220,7 +220,7 @@ f4 <- ggplot(data=who_cases.top.deaths.pop, aes(x=Deaths_per_pop, y=Country)) +
   theme = theme(plot.title = element_text(hjust = 0.5))
 )
 ```
-For the vaccination records, the WHO data [2] provided information regarding the most recent vaccination report for each country, in a total of 228 countries. Africa and Eastern Mediterranean WHO regions have the lowest mean values in terms of population fully vaccinated (Figure 5).
+For the vaccination records, the WHO data [2] provided information regarding the most recent vaccination report for each country, in a total of 228 countries. Africa and Eastern Mediterranean WHO regions have the lowest mean values in terms of population fully vaccinated (Figure 5). The World bank data [4] for Gross Domestic Product (GDP) contained 2020 GDP estimates for 185 countries. In terms of mean, Europe region has higher values of GDP than Africa, Eastern Mediterranean and South-East Asia (Figure 5).
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
 country.code <- read.csv("datasets/country_code.csv")
@@ -247,8 +247,6 @@ length(unique(who_cases.today.pop.vaccine$Country.x))
 
 ```
 
-
-The World bank data [4] for Gross Domestic Product (GDP) contained 2020 GDP estimates for 185 countries. In terms of mean, Europe region has higher values of GDP than Africa, Eastern Mediterranean and South-East Asia (Figure 5).
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, results=FALSE}
 gdp <- read.csv("datasets/API_NY.GDP.PCAP.CD_DS2_en_csv_v2_3632113.csv")
@@ -318,7 +316,7 @@ f1 + plot_annotation(
 )
 ```
 
-The Stringency Index is a measure related to country policies regarding lockdown measures, is based on indicators including school closures, workplace closures, and travel bans [6]. The index is scaled from 0 to 100, higher values means more strict policies. Over the course of the pandemic, the index varied in each country, the data contain the index overtime, from 2020 to 2022, was retrieved from the Our World in Data platform [6]. For this study, the Stringency index was aggregate by the mean, to represent the lockdown policy strictness, in average during the pandemic, for each country.
+The Stringency Index is a measure related to country policies regarding lockdown measures, is based on indicators including school closures, workplace closures, and travel bans [6]. The index is scaled from 0 to 100, higher values means more strict policies. Over the course of the pandemic the index varied in each country, and the data containing the index overtime, from 2020 to 2022, was retrieved from the Our World in Data platform [6]. For this study, the Stringency index was aggregate by the mean, to represent the lockdown policy strictness, in average during the pandemic, for each country.
 
 The correlation between the analyzed variables (Table 3) showed a moderate positive correlation between vaccination rate (percentage of population fully vaccinated), case rate (Equation 2), and GDP, and a weak positive correlation between vaccination rate and mortality rate (Equation 3). The mortality rate and case rate had a moderate positive correlation, and GDP had a moderate positive correlation with case rate and a weak positive correlation with mortality rate. The Stringency index had lower or moderate positive correlation with the other variables.
 
@@ -459,7 +457,7 @@ In conclusion, the project showed how the country number of cases and economy ma
 
 None.
 
-# Code Availability
+# Code Availability {-}
 
 All the code used to perform the analysis of this project is available at the github repository https://github.com/PauloHARocha/COVID-19-Gross-Domestic-Product-and-vaccination-rate-analysis.
 
